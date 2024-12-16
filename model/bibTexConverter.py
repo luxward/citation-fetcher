@@ -1,8 +1,14 @@
 import os
+import re
 import uuid
 
 from citeproc import CitationStylesStyle, CitationStylesBibliography, formatter, CitationItem, Citation
 from citeproc.source.bibtex import BibTeX
+import warnings
+
+from model.utils import remove_consecutive_spaces
+
+warnings.filterwarnings('ignore')
 
 
 def warn(citation_item):
@@ -17,6 +23,10 @@ class BibTexConverter:
                                              validate=False)
 
     def convert_text(self, text: str):
+        text = text.replace(r'$\{', '').replace(r'\}$', '').replace('$', '')
+        mts = re.findall(r'(\{\\"(.*?)})', text)
+        for mt in mts:
+            text = text.replace(mt[0], mt[1])
         filename = f'{uuid.uuid4().hex}.bib'
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(text)
@@ -36,7 +46,9 @@ class BibTexConverter:
         bibliography.register(citation)
         bibliography.cite(citation, warn)
         for item in bibliography.bibliography():
-            return str(item)
+            cite = str(item).replace('–', '-').replace('等', 'et al').replace('\n', '')
+            return remove_consecutive_spaces(cite)
+
 
 if __name__ == '__main__':
     converter = BibTexConverter()

@@ -5,8 +5,11 @@ from curl_cffi import requests
 from parsel import Selector
 
 from model.bibTexConverter import BibTexConverter
+from model.logger import create_logger
 from model.paper import Paper
 from model.utils import remove_consecutive_spaces
+
+logger = create_logger("client", stream_level='DEBUG')
 
 
 class Client:
@@ -20,13 +23,15 @@ class Client:
         self.h.ignore_tables = True
         self.h.ignore_links = True
         self.h.ignore_emphasis = True
+        self.converter = BibTexConverter()
 
     def search_papers(self, q: str, limit=1):
         raise NotImplementedError
 
 
 class BaiduClient(Client):
-    def search_papers(self, q: str, limit=3):
+    def search_papers(self, q: str, limit=3, use_doi=True):
+        logger.debug(f'Searching papers for {q}')
         url = 'https://xueshu.baidu.com/s?tn=SE_baiduxueshu_c1gjeupa&ie=utf-8&sc_hit=1'
         res = self.ss.get(url, params={
             "wd": q
@@ -47,21 +52,47 @@ class BaiduClient(Client):
             index = cite.find('DOI:')  # 去掉DOI
             doi = ""
             if index != -1:
-                cite = cite[:index]
-                doi = cite[index:]
+                cite, doi = cite[:index], cite[index:]
+                if use_doi and doi:
+                    logger.debug(f'Using DOI: {doi} to get bibtex...')
+                    url = 'https://api.paperpile.com/api/public/convert'
+                    data = {"fromIds": True, "input": doi, "targetFormat": "Bibtex"}
+                    res = self.ss.post(url, json=data, headers={
+                        'accept': '*/*',
+                        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                        'cache-control': 'no-cache',
+                        'content-type': 'application/json',
+                        'origin': 'https://www.bibtex.com',
+                        'pragma': 'no-cache',
+                        'priority': 'u=1, i',
+                        'referer': 'https://www.bibtex.com/',
+                        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"',
+                        'sec-fetch-dest': 'empty',
+                        'sec-fetch-mode': 'cors',
+                        'sec-fetch-site': 'cross-site',
+                    })
+                    bibtex = res.json()['output']
+                    cite = self.converter.convert_text(bibtex)
+                    yield Paper(title, cite, paper_id, doi)
+                    continue
             cite = remove_consecutive_spaces(cite)[4:]
             yield Paper(title, cite, paper_id, doi)
 
 
 class GoogleClient(Client):
     HOST = 'sci.673.org'
+
     # HOST = 'scholar.google.com'
 
-    def __init__(self):
+    def __init__(self, proxy=None):
         super().__init__()
-        # self.ss.proxies.update({
-        #     'https': 'http://127.0.0.1:10809',
-        # })
+        if proxy:
+            self.ss.proxies.update({
+                'https': proxy,
+            })
+            logger.debug(f'Using proxy: {proxy}')
         self.ss.headers.update({
             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'accept-language': 'zh-CN,zh;q=0.9',
@@ -88,10 +119,9 @@ class GoogleClient(Client):
             'x-browser-validation': 'Nbt54E7jcg8lQ4EExJrU2ugNG6o=',
             'x-browser-year': '2024'
         })
-        self.converter = BibTexConverter()
 
     def search_papers(self, q: str, limit=1):
-        print(f'Searching papers for {q}')
+        logger.debug(f'Searching papers for {q}')
         url = f'https://{self.HOST}/scholar?hl=zh-CN&as_sdt=0%2C5&btnG='
         res = self.ss.get(url, params={
             'q': q,
@@ -103,17 +133,16 @@ class GoogleClient(Client):
             title = self.h.handle(title.replace('\n', '')).strip()
             title = remove_consecutive_spaces(title)
 
-            print(f'Found paper: {title}, searching for citation...')
+            logger.debug(f'Found paper: {title}, searching for citation...')
             url = f'https://{self.HOST}/scholar?q=info:{cid}:scholar.google.com/&output=cite&scirp=0&hl=en'
             res = self.ss.get(url)
             sel = Selector(text=res.content.decode('utf-8'))
             cite_url = sel.xpath('//a[text()="BibTeX"]/@href').get().replace('&amp;', '&')
             res = self.ss.get(cite_url)
             try:
-                text = res.text.replace(r'$\{', '').replace(r'\}$', '').replace('$', '')
-                cite = self.converter.convert_text(text).replace('–', '-').replace('等', 'et al')
+                cite = self.converter.convert_text(res.text)
             except RuntimeError:
-                print(f'Error converting citation for {title}, {res.text}')
+                logger.error(f'Error converting citation for {title}, {res.text}')
                 return
             yield Paper(id=cid, title=title, cite=cite)
-        print(f'No papers found. {res.text}')
+        logger.error(f'No papers found. {res.text}')

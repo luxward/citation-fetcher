@@ -6,11 +6,12 @@ if __name__ == '__main__':
     parser.add_argument('--query', '-q', type=str, help='The query string to search')
     parser.add_argument('--engine', '-e', type=str, default='baidu',
                         help='The search engine to use, either "google" or "baidu", default is "baidu"')
+    parser.add_argument('--proxy', '-p', type=str, help='The proxy to use, eg. "http://127.0.0.1:10809"')
     args = parser.parse_args()
 
     if args.engine == 'google':
         from model.clients import GoogleClient
-        client = GoogleClient()
+        client = GoogleClient(proxy=args.proxy)
     else:
         from model.clients import BaiduClient
         client = BaiduClient()
