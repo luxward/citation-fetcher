@@ -131,7 +131,12 @@ class GoogleClient(Client):
             'q': q,
         })
         sel = Selector(text=res.text)
-        for a in sel.xpath('//div[@id="gs_res_ccl_mid"]/div')[:limit]:
+
+        tags = sel.xpath('//div[@id="gs_res_ccl_mid"]/div')[:limit]
+        if not tags:
+            logger.error(f'No papers found for {q}')
+            return
+        for a in tags:
             cid = a.xpath('./@data-cid').extract_first()
             title = a.xpath(f'.//a[@id="{cid}"]').get()
             title = self.h.handle(title.replace('\n', '')).strip()
