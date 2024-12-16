@@ -9,7 +9,7 @@ ss.headers.update({
 })
 
 
-def remove_continue_space(text: str):
+def remove_consecutive_spaces(text: str):
     return ' '.join(text.split())
 
 
@@ -26,18 +26,18 @@ def get_cite(wd: str):
     h.ignore_emphasis = True
     h.ignore_tables = True
     data_click = "{'button_tp':'title'}"
-    for a in sel.xpath(f'//div[@class="sc_content"]//a[@data-click="{data_click}"]'):
-        href = a.xpath('./@href').extract_first()
-        url = urllib.parse.urlparse(href)
-        paper_id = urllib.parse.parse_qs(url.query)['paperid'][0]
-        print(h.handle(a.extract()).strip().replace('\n', ''))
-        print(f"paper_id: {paper_id}")
+    a = sel.xpath(f'//div[@class="sc_content"]//a[@data-click="{data_click}"]')[0]
+    href = a.xpath('./@href').extract_first()
+    url = urllib.parse.urlparse(href)
+    paper_id = urllib.parse.parse_qs(url.query)['paperid'][0]
+    print(h.handle(a.extract()).strip().replace('\n', ''))
+    print(f"paper_id: {paper_id}")
 
-        url = f'https://xueshu.baidu.com/u/citation?type=cite&paperid={paper_id}'
-        res = ss.get(url)
-        cite = res.json()['data']['sc_GBT7714'].replace(' ,', ',').replace(' .', '.').replace('].', ']. ')
-        cite = remove_continue_space(cite)[4:]
-        return cite
+    url = f'https://xueshu.baidu.com/u/citation?type=cite&paperid={paper_id}'
+    res = ss.get(url)
+    cite = res.json()['data']['sc_GBT7714'].replace(' ,', ',').replace(' .', '.').replace('].', ']. ')
+    cite = remove_consecutive_spaces(cite)[4:]
+    return cite
 
 
 if __name__ == '__main__':
