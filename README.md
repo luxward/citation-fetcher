@@ -1,5 +1,10 @@
 ## Run
 
+Run directly.
+```python
+python main.py
+```
+
 Use baidu scholar to search for citation.
 ```python
 python baidu.py
