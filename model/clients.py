@@ -51,6 +51,7 @@ class BaiduClient(Client):
             cite = res.json()['data']['sc_GBT7714'].replace(' ,', ',').replace(' .', '.').replace('].', ']. ')
             index = cite.find('DOI:')  # 去掉DOI
             doi = ""
+            success = False
             if index != -1:
                 cite, doi = cite[:index], cite[index:]
                 if use_doi and doi:
@@ -73,11 +74,14 @@ class BaiduClient(Client):
                         'sec-fetch-mode': 'cors',
                         'sec-fetch-site': 'cross-site',
                     })
-                    bibtex = res.json()['output']
-                    cite = self.converter.convert_text(bibtex)
-                    yield Paper(title, cite, paper_id, doi)
-                    continue
-            cite = remove_consecutive_spaces(cite)[4:]
+                    try:
+                        bibtex = res.json()['output']
+                        cite = self.converter.convert_text(bibtex)
+                        success = True
+                    except KeyError:
+                        logger.error(f'Error getting bibtex for {doi}, fallback to baidu citation. {res.text}')
+            if not success:
+                cite = remove_consecutive_spaces(cite)[4:]
             yield Paper(title, cite, paper_id, doi)
 
 
@@ -145,4 +149,3 @@ class GoogleClient(Client):
                 logger.error(f'Error converting citation for {title}, {res.text}')
                 return
             yield Paper(id=cid, title=title, cite=cite)
-        logger.error(f'No papers found. {res.text}')
