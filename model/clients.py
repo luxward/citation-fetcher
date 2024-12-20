@@ -145,8 +145,15 @@ class GoogleClient(Client):
             logger.debug(f'Found paper: {title}, searching for citation...')
             url = f'https://{self.HOST}/scholar?q=info:{cid}:scholar.google.com/&output=cite&scirp=0&hl=en'
             res = self.ss.get(url)
+            if res.status_code != 200:
+                logger.error(f'Error getting citation for {title}, {res.text}')
+                return
             sel = Selector(text=res.content.decode('utf-8'))
-            cite_url = sel.xpath('//a[text()="BibTeX"]/@href').get().replace('&amp;', '&')
+            try:
+                cite_url = sel.xpath('//a[text()="BibTeX"]/@href').get().replace('&amp;', '&')
+            except AttributeError:
+                logger.error(f'Error parse citation response for {title}, {res.text}')
+                return
             res = self.ss.get(cite_url)
             try:
                 cite = self.converter.convert_text(res.text)

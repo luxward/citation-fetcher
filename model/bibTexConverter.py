@@ -37,7 +37,7 @@ class BibTexConverter:
         return result
 
     def convert(self, filename: str):
-        bib_source = BibTeX(filename)
+        bib_source = BibTeX(filename, encoding='utf-8')
         key = list(bib_source.keys())[0]
         citation = Citation([CitationItem(key)])
 

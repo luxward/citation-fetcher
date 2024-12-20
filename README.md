@@ -1,7 +1,7 @@
 ## Run
 # Run from source
 ```cmd
-    pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 Run directly.
 ```python
@@ -20,5 +20,5 @@ python google.py
 
 # Run from exe
 ```cmd
-    .\cite.exe --engine baidu --query 'An Empirical Study of the Cost of DNS-over-HTTPS'
+.\cite.exe --engine baidu --query 'An Empirical Study of the Cost of DNS-over-HTTPS'
 ```
