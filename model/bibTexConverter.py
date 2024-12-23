@@ -19,7 +19,7 @@ def warn(citation_item):
 class BibTexConverter:
     def __init__(self):
         project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-        self.bib_style = CitationStylesStyle(f'{project_dir}/data/styles/gb7714-1987.csl',
+        self.bib_style = CitationStylesStyle(f'{project_dir}/data/styles/gb7714-2015.csl',
                                              validate=False)
 
     def convert_text(self, text: str):
