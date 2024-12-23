@@ -4,7 +4,6 @@ import html2text
 from curl_cffi import requests
 from parsel import Selector
 
-from model.bibTexConverter import BibTexConverter
 from model.logger import create_logger
 from model.paper import Paper
 from model.utils import remove_consecutive_spaces
@@ -23,14 +22,14 @@ class Client:
         self.h.ignore_tables = True
         self.h.ignore_links = True
         self.h.ignore_emphasis = True
-        self.converter = BibTexConverter()
+        # self.converter = BibTexConverter()
 
     def search_papers(self, q: str, limit=1):
         raise NotImplementedError
 
 
 class BaiduClient(Client):
-    def search_papers(self, q: str, limit=3, use_doi=True):
+    def search_papers(self, q: str, limit=3, use_doi=False):
         logger.debug(f'Searching papers for {q}')
         url = 'https://xueshu.baidu.com/s?tn=SE_baiduxueshu_c1gjeupa&ie=utf-8&sc_hit=1'
         res = self.ss.get(url, params={
@@ -52,34 +51,34 @@ class BaiduClient(Client):
             index = cite.find('DOI:')  # 去掉DOI
             doi = ""
             success = False
-            if index != -1:
-                cite, doi = cite[:index], cite[index:]
-                if use_doi and doi:
-                    logger.debug(f'Using DOI: {doi} to get bibtex...')
-                    url = 'https://api.paperpile.com/api/public/convert'
-                    data = {"fromIds": True, "input": doi, "targetFormat": "Bibtex"}
-                    res = self.ss.post(url, json=data, headers={
-                        'accept': '*/*',
-                        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                        'cache-control': 'no-cache',
-                        'content-type': 'application/json',
-                        'origin': 'https://www.bibtex.com',
-                        'pragma': 'no-cache',
-                        'priority': 'u=1, i',
-                        'referer': 'https://www.bibtex.com/',
-                        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-                        'sec-ch-ua-mobile': '?0',
-                        'sec-ch-ua-platform': '"Windows"',
-                        'sec-fetch-dest': 'empty',
-                        'sec-fetch-mode': 'cors',
-                        'sec-fetch-site': 'cross-site',
-                    })
-                    try:
-                        bibtex = res.json()['output']
-                        cite = self.converter.convert_text(bibtex)
-                        success = True
-                    except KeyError:
-                        logger.error(f'Error getting bibtex for {doi}, fallback to baidu citation. {res.text}')
+            # if index != -1:
+            #     cite, doi = cite[:index], cite[index:]
+            #     if use_doi and doi:
+            #         logger.debug(f'Using DOI: {doi} to get bibtex...')
+            #         url = 'https://api.paperpile.com/api/public/convert'
+            #         data = {"fromIds": True, "input": doi, "targetFormat": "Bibtex"}
+            #         res = self.ss.post(url, json=data, headers={
+            #             'accept': '*/*',
+            #             'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            #             'cache-control': 'no-cache',
+            #             'content-type': 'application/json',
+            #             'origin': 'https://www.bibtex.com',
+            #             'pragma': 'no-cache',
+            #             'priority': 'u=1, i',
+            #             'referer': 'https://www.bibtex.com/',
+            #             'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            #             'sec-ch-ua-mobile': '?0',
+            #             'sec-ch-ua-platform': '"Windows"',
+            #             'sec-fetch-dest': 'empty',
+            #             'sec-fetch-mode': 'cors',
+            #             'sec-fetch-site': 'cross-site',
+            #         })
+            #         try:
+            #             bibtex = res.json()['output']
+            #             cite = self.converter.convert_text(bibtex)
+            #             success = True
+            #         except KeyError:
+            #             logger.error(f'Error getting bibtex for {doi}, fallback to baidu citation. {res.text}')
             if not success:
                 cite = remove_consecutive_spaces(cite)[4:]
             yield Paper(title, cite, paper_id, doi)
@@ -124,7 +123,7 @@ class GoogleClient(Client):
             'x-browser-year': '2024'
         })
 
-    def search_papers(self, q: str, limit=1):
+    def search_papers(self, q: str, limit=1, **kwargs):
         logger.debug(f'Searching papers for {q}')
         url = f'https://{self.HOST}/scholar?hl=zh-CN&as_sdt=0%2C5&btnG='
         res = self.ss.get(url, params={
@@ -143,21 +142,12 @@ class GoogleClient(Client):
             title = remove_consecutive_spaces(title)
 
             logger.debug(f'Found paper: {title}, searching for citation...')
-            url = f'https://{self.HOST}/scholar?q=info:{cid}:scholar.google.com/&output=cite&scirp=0&hl=en'
+            url = f'https://{self.HOST}/scholar?q=info:{cid}:scholar.google.com/&output=cite&scirp=0&hl=zh-CN'
             res = self.ss.get(url)
             if res.status_code != 200:
                 logger.error(f'Error getting citation for {title}, {res.text}')
                 return
-            sel = Selector(text=res.content.decode('utf-8'))
-            try:
-                cite_url = sel.xpath('//a[text()="BibTeX"]/@href').get().replace('&amp;', '&')
-            except AttributeError:
-                logger.error(f'Error parse citation response for {title}, {res.text}')
-                return
-            res = self.ss.get(cite_url)
-            try:
-                cite = self.converter.convert_text(res.text)
-            except RuntimeError:
-                logger.error(f'Error converting citation for {title}, {res.text}')
-                return
+            sel = Selector(text=res.text)
+            cite = sel.xpath('//td')[0].xpath('./div/text()').extract_first()
+
             yield Paper(id=cid, title=title, cite=cite)

@@ -1,4 +1,7 @@
 import re
+
+import pybtex
+
 cite = """
 @inproceedings{moura2021fragmentation,
   title={Fragmentation, truncation, and timeouts: are large DNS messages falling to bits?},
@@ -13,3 +16,6 @@ mts = re.findall(r'(\{\\"(.*?)})', cite)
 for mt in mts:
     cite = cite.replace(mt[0], mt[1])
 print(cite)
+
+text = pybtex.format_from_file("result/1.bib", style="plain")
+print(text)
