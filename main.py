@@ -9,17 +9,22 @@ if __name__ == '__main__':
     parser.add_argument('--proxy', '-p', type=str, help='The proxy to use, eg. "http://127.0.0.1:10809"')
     args = parser.parse_args()
 
-    if args.engine == 'google':
-        from model.clients import GoogleClient
-        client = GoogleClient(proxy=args.proxy)
-    else:
-        from model.clients import BaiduClient
-        client = BaiduClient()
+    try:
+        if args.engine == 'google':
+            from model.clients import GoogleClient
 
-    if not args.query:
-        args.query = input("请输入要查询的论文名称：")
+            client = GoogleClient(proxy=args.proxy)
+        else:
+            from model.clients import BaiduClient
 
-    for paper in client.search_papers(args.query):
-        print(f"{paper.title}")
-        print(paper.cite)
-        print('-' * 50)
+            client = BaiduClient()
+
+        if not args.query:
+            args.query = input("请输入要查询的论文名称：")
+
+        for paper in client.search_papers(args.query):
+            print(f"{paper.title}")
+            print(paper.cite)
+            print('-' * 50)
+    finally:
+        input("Press any key to exit...")
