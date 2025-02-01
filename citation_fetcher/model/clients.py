@@ -9,6 +9,7 @@ from ..model.paper import Paper
 from ..model.utils import remove_consecutive_spaces
 
 logger = create_logger("client", stream_level='DEBUG')
+from functools import lru_cache
 
 
 class Client:
@@ -29,6 +30,7 @@ class Client:
 
 
 class BaiduClient(Client):
+    @lru_cache(maxsize=30)
     def search_papers(self, q: str, limit=3, use_doi=False):
         logger.debug(f'Searching papers for {q}')
         url = 'https://xueshu.baidu.com/s?tn=SE_baiduxueshu_c1gjeupa&ie=utf-8&sc_hit=1'
