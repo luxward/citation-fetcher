@@ -1,0 +1,43 @@
+Metadata-Version: 2.1
+Name: citation-fetcher
+Version: 0.1.0
+Summary: A tool to fetch and manage citations.
+Home-page: https://github.com/luxward/citation-fetcher
+Author: luxward
+Author-email: your.email@example.com
+License: MIT
+Project-URL: Bug Reports, https://github.com/luxward/citation-fetcher/issues
+Project-URL: Source, https://github.com/luxward/citation-fetcher/
+Keywords: citation,fetch,tool
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+
+## Run
+# Run from source
+```cmd
+pip install -r requirements.txt
+```
+Run directly.
+```python
+python main.py
+```
+
+Use baidu scholar to search for citation.
+```python
+python baidu.py
+```
+
+Use google scholar to search for citation. Need to enable system proxy.
+```python
+python google.py
+```
+
+# Run from exe
+```cmd
+.\cite.exe --engine baidu --query 'An Empirical Study of the Cost of DNS-over-HTTPS'
+```
+

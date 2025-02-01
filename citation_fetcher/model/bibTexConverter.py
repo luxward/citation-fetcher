@@ -6,7 +6,7 @@ from citeproc import CitationStylesStyle, CitationStylesBibliography, formatter,
 from citeproc.source.bibtex import BibTeX
 import warnings
 
-from model.utils import remove_consecutive_spaces
+from ..model.utils import remove_consecutive_spaces
 
 warnings.filterwarnings('ignore')
 

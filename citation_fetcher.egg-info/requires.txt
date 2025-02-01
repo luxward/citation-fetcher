@@ -1,0 +1,4 @@
+parsel
+html2text
+curl_cffi
+colorlog

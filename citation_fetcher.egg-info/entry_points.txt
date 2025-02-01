@@ -1,0 +1,3 @@
+[console_scripts]
+citation_fetcher = citation_fetcher.cli:main
+

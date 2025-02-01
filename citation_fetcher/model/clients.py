@@ -4,9 +4,9 @@ import html2text
 from curl_cffi import requests
 from parsel import Selector
 
-from model.logger import create_logger
-from model.paper import Paper
-from model.utils import remove_consecutive_spaces
+from ..model.logger import create_logger
+from ..model.paper import Paper
+from ..model.utils import remove_consecutive_spaces
 
 logger = create_logger("client", stream_level='DEBUG')
 
