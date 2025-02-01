@@ -32,7 +32,7 @@ class Client:
 class BaiduClient(Client):
     @lru_cache(maxsize=30)
     def search_papers(self, q: str, limit=3, use_doi=False):
-        logger.debug(f'Searching papers for {q}')
+        #logger.debug(f'Searching papers for {q}')
         url = 'https://xueshu.baidu.com/s?tn=SE_baiduxueshu_c1gjeupa&ie=utf-8&sc_hit=1'
         res = self.ss.get(url, params={
             "wd": q
